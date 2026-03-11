@@ -1,0 +1,82 @@
+{
+  "clubs": {
+    "the-heath": {
+      "club_name": "The Heath Golf Club",
+      "app_title": "The Heath Tee Monitor",
+      "brs_login_url": "https://members.brsgolf.com/theheath/login",
+      "tee_sheet_url": "https://members.brsgolf.com/theheath/tee-sheet/1",
+      "dashboard_port": 5070,
+      "scrape_interval": 120,
+      "history_hours": 5,
+      "data_file": "tee_data.json",
+      "hole_pars": [5, 3, 4, 5, 4, 4, 4, 4, 3, 4, 3, 4, 4, 4, 4, 5, 3, 4],
+      "theme": {
+        "bg": "#0f326e",
+        "panel": "#1f4f9d",
+        "panel_strong": "#0a1a33",
+        "line": "rgba(255,255,255,0.14)",
+        "text": "#e6f1ff",
+        "muted": "rgba(212,234,247,0.62)",
+        "accent": "#b7d7ff",
+        "ok": "#6dd694",
+        "warn": "#ff8d6e",
+        "dot": "#f3d43b"
+      },
+      "parser": {
+        "ignore_exact": ["THE HEATH GOLF CLUB"]
+      }
+    },
+    "athenry": {
+      "club_name": "Athenry Golf Club",
+      "app_title": "Athenry Tee Monitor",
+      "brs_login_url": "https://members.brsgolf.com/athenry/login",
+      "tee_sheet_url": "https://members.brsgolf.com/athenry/tee-sheet/1",
+      "dashboard_port": 5060,
+      "scrape_interval": 120,
+      "history_hours": 5,
+      "data_file": "tee_data.json",
+      "hole_pars": [4, 4, 3, 4, 4, 3, 4, 5, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4],
+      "theme": {
+        "bg": "#102b1b",
+        "panel": "#21563a",
+        "panel_strong": "#09160f",
+        "line": "rgba(255,255,255,0.12)",
+        "text": "#eef8f1",
+        "muted": "rgba(214,235,220,0.62)",
+        "accent": "#bfe9c8",
+        "ok": "#7ce1a4",
+        "warn": "#ff9d72",
+        "dot": "#f3d43b"
+      },
+      "parser": {
+        "ignore_exact": ["ATHENRY GOLF CLUB"]
+      }
+    },
+    "mountrath": {
+      "club_name": "Mountrath Golf Club",
+      "app_title": "Mountrath Tee Monitor",
+      "brs_login_url": "https://members.brsgolf.com/mountrath/login",
+      "tee_sheet_url": "https://members.brsgolf.com/mountrath/tee-sheet/1",
+      "dashboard_port": 5050,
+      "scrape_interval": 120,
+      "history_hours": 5,
+      "data_file": "tee_data.json",
+      "hole_pars": [4, 3, 4, 4, 5, 3, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 4],
+      "theme": {
+        "bg": "#33210f",
+        "panel": "#6a4322",
+        "panel_strong": "#190f08",
+        "line": "rgba(255,255,255,0.12)",
+        "text": "#fff0de",
+        "muted": "rgba(244,221,193,0.62)",
+        "accent": "#f1cb9a",
+        "ok": "#9be0ac",
+        "warn": "#ff9975",
+        "dot": "#f3d43b"
+      },
+      "parser": {
+        "ignore_exact": ["MOUNTRATH GOLF CLUB"]
+      }
+    }
+  }
+}

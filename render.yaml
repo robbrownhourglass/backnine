@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: backnine-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 app:app
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  - type: worker
+    name: backnine-scraper
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python manage.py scrape-all
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

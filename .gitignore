@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+logs/
+tee-monitor-*/logs/
+secrets/*.json
+!secrets/README.md

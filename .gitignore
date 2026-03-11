@@ -4,5 +4,6 @@ __pycache__/
 data/
 logs/
 tee-monitor-*/logs/
+tee-monitor-*/tee_data.json
 secrets/*.json
 !secrets/README.md

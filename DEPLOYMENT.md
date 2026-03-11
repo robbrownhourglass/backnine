@@ -54,6 +54,14 @@ DOMAIN=your-real-domain.example.com
 
 3. Make sure `secrets/clubs.local.json` contains the club credentials.
 
+For Render or any other hosted platform without a local secret file, set:
+
+```bash
+SECRET_CONFIG_JSON={"clubs":{"the-heath":{"brs_username":"...","brs_password":"..."},"athenry":{"brs_username":"...","brs_password":"..."},"mountrath":{"brs_username":"...","brs_password":"..."}}}
+```
+
+The app will read `SECRET_CONFIG_JSON` first, and fall back to `secrets/clubs.local.json` if it is not present.
+
 4. Start the stack:
 
 ```bash

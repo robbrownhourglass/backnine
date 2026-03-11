@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 
@@ -16,9 +17,16 @@ def _read_json(path: Path) -> dict:
         return json.load(f)
 
 
+def _read_secret_config() -> dict:
+    inline_json = os.environ.get("SECRET_CONFIG_JSON")
+    if inline_json:
+        return json.loads(inline_json)
+    return _read_json(SECRET_CONFIG_PATH)
+
+
 def load_club_definition(slug: str) -> dict:
     public_data = _read_json(PUBLIC_CONFIG_PATH).get("clubs", {})
-    secret_data = _read_json(SECRET_CONFIG_PATH).get("clubs", {})
+    secret_data = _read_secret_config().get("clubs", {})
 
     if slug not in public_data:
         raise KeyError(f"Unknown club slug: {slug}")

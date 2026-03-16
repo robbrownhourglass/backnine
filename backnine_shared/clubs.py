@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_CONFIG_PATH = ROOT_DIR / "config" / "clubs.json"
 SECRET_CONFIG_PATH = ROOT_DIR / "secrets" / "clubs.local.json"
+RENDER_SECRET_CONFIG_PATH = Path("/etc/secrets/clubs.local.json")
 
 
 def _read_json(path: Path) -> dict:
@@ -21,6 +22,8 @@ def _read_secret_config() -> dict:
     inline_json = os.environ.get("SECRET_CONFIG_JSON")
     if inline_json:
         return json.loads(inline_json)
+    if RENDER_SECRET_CONFIG_PATH.exists():
+        return _read_json(RENDER_SECRET_CONFIG_PATH)
     return _read_json(SECRET_CONFIG_PATH)
 
 
@@ -62,4 +65,5 @@ def build_runtime_config(slug: str, base_dir: Path) -> dict:
         "HOLE_PARS": club["hole_pars"],
         "THEME": club.get("theme", {}),
         "PARSER": club.get("parser", {}),
+        "MAX_SNAPSHOT_AGE_SECONDS": club.get("max_snapshot_age_seconds", 600),
     }

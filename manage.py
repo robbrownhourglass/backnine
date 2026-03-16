@@ -7,7 +7,7 @@ import asyncio
 from pathlib import Path
 
 from backnine_shared.clubs import build_runtime_config, list_club_slugs
-from backnine_shared.scraper import run_scraper
+from backnine_shared.scraper import run_scraper, scrape_once_async
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -20,6 +20,10 @@ def runtime_config(slug: str):
 
 
 def serve(args):
+    async def initial_scrape():
+        await asyncio.gather(*(scrape_once_async(runtime_config(slug)) for slug in list_club_slugs()))
+
+    asyncio.run(initial_scrape())
     from app import app
 
     app.run(host="0.0.0.0", port=args.port, debug=False)

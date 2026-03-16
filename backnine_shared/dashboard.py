@@ -7,8 +7,6 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template_string
 
 from backnine_shared.clubs import build_runtime_config, list_club_slugs
-
-
 HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -490,6 +488,15 @@ HTML = """<!DOCTYPE html>
       align-items: flex-start;
     }
 
+    .wrap {
+      padding: 18px 10px 42px;
+    }
+
+    .course-card, .slots-card, .details-card {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
     .course-controls {
       grid-template-columns: 1fr;
     }
@@ -500,10 +507,36 @@ HTML = """<!DOCTYPE html>
 
     .hole-row {
       flex-wrap: nowrap;
+      gap: 4px;
     }
 
     .hole-unit {
       min-width: 0;
+      padding: 12px 4px 4px;
+    }
+  }
+
+  @media (max-aspect-ratio: 4/5) {
+    .wrap {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .course-card, .slots-card, .details-card {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .hole-units {
+      gap: 10px;
+    }
+
+    .hole-row {
+      gap: 2px;
+    }
+
+    .hole-unit {
+      padding: 12px 2px 4px;
     }
   }
 </style>

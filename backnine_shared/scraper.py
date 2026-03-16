@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import re
+import threading
 from datetime import datetime, timedelta, timezone
 
 from playwright.async_api import TimeoutError as PWTimeout
@@ -12,6 +13,7 @@ from playwright.async_api import async_playwright
 
 TIME_BLOCK_RE = re.compile(r"\b(?:[01]\d|2[0-3]):[0-5]\d\b")
 NAME_LINE_RE = re.compile(r"^[A-Za-z][A-Za-z'\-\.]*(?:\s+[A-Za-z][A-Za-z'\-\.]*){1,3}$")
+SCRAPE_LOCKS: dict[str, threading.Lock] = {}
 
 
 def load_data(data_file: str) -> dict:
@@ -19,6 +21,10 @@ def load_data(data_file: str) -> dict:
         with open(data_file) as f:
             return json.load(f)
     return {"snapshots": [], "last_scrape": None, "status": "starting"}
+
+
+def scrape_lock(data_file: str) -> threading.Lock:
+    return SCRAPE_LOCKS.setdefault(data_file, threading.Lock())
 
 
 def save_data(data_file: str, data: dict):
@@ -297,7 +303,7 @@ async def login(page, config):
     print("  Login submitted")
 
 
-async def run_scraper(config):
+async def scrape_once_async(config) -> dict:
     data = load_data(config.DATA_FILE)
     data["status"] = "starting"
     save_data(config.DATA_FILE, data)
@@ -309,55 +315,92 @@ async def run_scraper(config):
 
         try:
             await login(page, config)
-        except Exception as exc:
-            data["status"] = f"login_failed: {exc}"
-            save_data(config.DATA_FILE, data)
-            await browser.close()
-            return
+            await page.goto(config.TEE_SHEET_URL, wait_until="domcontentloaded", timeout=20000)
+            await page.wait_for_timeout(2000)
+            await expand_tee_times(page)
 
-        print("Logged in. Starting scrape loop.")
-
-        while True:
-            try:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Scraping...")
+            if "login" in page.url.lower():
+                await login(page, config)
                 await page.goto(config.TEE_SHEET_URL, wait_until="domcontentloaded", timeout=20000)
                 await page.wait_for_timeout(2000)
                 await expand_tee_times(page)
 
-                if "login" in page.url.lower():
-                    print("  Session expired, logging in again.")
-                    await login(page, config)
-                    await page.goto(config.TEE_SHEET_URL, wait_until="domcontentloaded")
-                    await page.wait_for_timeout(2000)
-                    await expand_tee_times(page)
+            slots = await parse_tee_sheet(page, config)
+            now = datetime.now(timezone.utc).isoformat()
+            snapshot = {
+                "scraped_at": now,
+                "url": page.url,
+                "slot_count": len(slots),
+                "slots": slots,
+            }
 
-                slots = await parse_tee_sheet(page, config)
-                now = datetime.now(timezone.utc).isoformat()
-                snapshot = {
-                    "scraped_at": now,
-                    "url": page.url,
-                    "slot_count": len(slots),
-                    "slots": slots,
-                }
+            data = load_data(config.DATA_FILE)
+            data["snapshots"].append(snapshot)
+            data["snapshots"] = prune_old_snapshots(data["snapshots"], config.HISTORY_HOURS)
+            data["last_scrape"] = now
+            data["status"] = "ok"
+            save_data(config.DATA_FILE, data)
+            return data
+        except Exception as exc:
+            data = load_data(config.DATA_FILE)
+            status_prefix = "login_failed" if "login" in str(exc).lower() else "error"
+            data["status"] = f"{status_prefix}: {exc}"
+            save_data(config.DATA_FILE, data)
+            return data
+        finally:
+            await browser.close()
 
-                data = load_data(config.DATA_FILE)
-                data["snapshots"].append(snapshot)
-                data["snapshots"] = prune_old_snapshots(data["snapshots"], config.HISTORY_HOURS)
-                data["last_scrape"] = now
-                data["status"] = "ok"
-                save_data(config.DATA_FILE, data)
 
-                print(f"  Captured {len(slots)} slots. Snapshots kept: {len(data['snapshots'])}")
-            except PWTimeout:
-                print("  Page timeout; retrying next cycle.")
-                data = load_data(config.DATA_FILE)
-                data["status"] = "timeout"
-                save_data(config.DATA_FILE, data)
-            except Exception as exc:
-                print(f"  Error: {exc}")
-                data = load_data(config.DATA_FILE)
-                data["status"] = f"error: {exc}"
-                save_data(config.DATA_FILE, data)
+def scrape_once(config) -> dict:
+    lock = scrape_lock(config.DATA_FILE)
+    with lock:
+        return asyncio.run(scrape_once_async(config))
 
-            print(f"  Sleeping {config.SCRAPE_INTERVAL}s.")
-            await asyncio.sleep(config.SCRAPE_INTERVAL)
+
+def data_is_stale(data: dict, max_age_seconds: int) -> bool:
+    last_scrape = data.get("last_scrape")
+    if not last_scrape:
+        return True
+    try:
+        last = datetime.fromisoformat(last_scrape)
+    except ValueError:
+        return True
+    return (datetime.now(timezone.utc) - last).total_seconds() > max_age_seconds
+
+
+def ensure_fresh_data(config) -> dict:
+    data = load_data(config.DATA_FILE)
+    if data_is_stale(data, getattr(config, "MAX_SNAPSHOT_AGE_SECONDS", 600)):
+        return scrape_once(config)
+    return data
+
+
+async def run_scraper(config):
+    data = load_data(config.DATA_FILE)
+    data["status"] = "starting"
+    save_data(config.DATA_FILE, data)
+
+    print("Starting scrape loop.")
+
+    while True:
+        try:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Scraping...")
+            data = await scrape_once_async(config)
+            if data.get("status") == "ok" and data.get("snapshots"):
+                latest = data["snapshots"][-1]
+                print(f"  Captured {latest['slot_count']} slots. Snapshots kept: {len(data['snapshots'])}")
+            else:
+                print(f"  Scrape status: {data.get('status', 'unknown')}")
+        except PWTimeout:
+            print("  Page timeout; retrying next cycle.")
+            data = load_data(config.DATA_FILE)
+            data["status"] = "timeout"
+            save_data(config.DATA_FILE, data)
+        except Exception as exc:
+            print(f"  Error: {exc}")
+            data = load_data(config.DATA_FILE)
+            data["status"] = f"error: {exc}"
+            save_data(config.DATA_FILE, data)
+
+        print(f"  Sleeping {config.SCRAPE_INTERVAL}s.")
+        await asyncio.sleep(config.SCRAPE_INTERVAL)

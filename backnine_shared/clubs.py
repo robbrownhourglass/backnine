@@ -42,7 +42,7 @@ def load_club_definition(slug: str) -> dict:
 
 def list_club_slugs() -> list[str]:
     public_data = _read_json(PUBLIC_CONFIG_PATH).get("clubs", {})
-    return sorted(public_data.keys())
+    return sorted(slug for slug, cfg in public_data.items() if cfg.get("enabled", True))
 
 
 def build_runtime_config(slug: str, base_dir: Path) -> dict:

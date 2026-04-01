@@ -28,6 +28,7 @@
       }
     },
     "athenry": {
+      "enabled": false,
       "club_name": "Athenry Golf Club",
       "app_title": "Athenry Tee Monitor",
       "brs_login_url": "https://members.brsgolf.com/athenry/login",
